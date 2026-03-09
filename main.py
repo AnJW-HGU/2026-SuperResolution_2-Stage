@@ -1,0 +1,58 @@
+import subprocess
+import torch
+
+# dataset/originals의 파일 수를 줄임
+def reduce_originals():
+    subprocess.run(['python', 'Part0/reduce_dataset.py'])
+
+# dataset/original을 gt/train, gt/test, gt/val로 분리
+def split_original():
+    subprocess.run(['python', 'Part0/dataset_train_test_txt.py'])
+
+# gt/train, gt/test, gt/val -> lq/train, lq/test, lq/val
+def low_resolution():
+    subprocess.run(['python', 'Part0/low_resolution_folder_for_super_resolution.py'])
+
+# gt/train, gt/test -> lq/train, lq/test
+def degradation():
+    subprocess.run(['python', 'Part0/degradation_folder_for_super_resolution.py'])
+
+# meta info pairdata 만들기
+def generate_meta_info_pairdata():
+    subprocess.run(['python', 'Part1/Real-ESRGAN/scripts/generate_meta_info_pairdata.py', '--input', 'dataset/gt/train', 'dataset/lq/train', '--meta_info', 'dataset/meta_info/meta_info_RE_pair.txt'])
+
+# Real-ESRGAN 학습
+def train_SR():
+    subprocess.run(['python', 'Part1/Real-ESRGAN/realesrgan/train.py', '-opt', 'Part1/Real-ESRGAN/options/finetune_realesrgan_x4plus_pairdata.yml', '--auto_resume'])
+
+# SR 테스트
+def test_SR():
+    subprocess.run(['python', 'Part1/Real-ESRGAN/test.py'])
+
+def split_SR_output():
+    subprocess.run(['python', 'Part0/dataset_train_test_for_classification.py'])
+
+# CLS
+def classification():
+    subprocess.run(['python', 'Part2/ResNet50nAdaptivePooling.py'])
+
+
+if __name__ == "__main__":
+    # print("-----reduce dataset-----")
+    # reduce_originals()
+    # print("-----split original-----")
+    # split_original()
+    # print("-----low_resolution--------")
+    # low_resolution()
+    # print("-----degradation--------")
+    # degradation()
+    # print("-----pairdata-----------")
+    # generate_meta_info_pairdata()
+    print("-----train--------------")
+    train_SR()
+    # print("-----test---------------")
+    # test_SR()
+    # print("-----split SR output----")
+    # split_SR_output()
+    # print("-----classification-----")
+    # classification()
