@@ -25,9 +25,13 @@ def generate_meta_info_pairdata():
 def train_SR():
     subprocess.run(['python', 'Part1/Real-ESRGAN/realesrgan/train.py', '-opt', 'Part1/Real-ESRGAN/options/finetune_realesrgan_x4plus_pairdata.yml', '--auto_resume'])
 
+# SRGAN 학습
+def train_SRGAN():
+    subprocess.run(['python', 'Part1/BasicSR/basicsr/train.py', '-opt', 'Part1/BasicSR/options/train/ESRGAN/train_ESRGAN_x4.yml', '--auto_resume'])
+
 # SR 테스트
 def test_SR():
-    subprocess.run(['python', 'Part1/Real-ESRGAN/test.py'])
+    subprocess.run(['python', 'Part1/test.py'])
 
 def split_SR_output():
     subprocess.run(['python', 'Part0/dataset_train_test_for_classification.py'])

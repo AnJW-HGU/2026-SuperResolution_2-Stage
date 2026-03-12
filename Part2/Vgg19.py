@@ -5,7 +5,7 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from torchvision.models import ResNet50_Weights
+from torchvision.models import VGG19_Weights
 import numpy as np
 from sklearn.metrics import confusion_matrix, precision_score, recall_score
 
@@ -18,7 +18,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 num_epochs = 50
 num_workers = 16
 batch_size = 16  
-learning_rate = 0.001
+learning_rate = 0.00002
 
 # === Adjust: Input Image Size 
 # Image transformation settings (128x128 resolution)
@@ -30,16 +30,16 @@ transform_HR = transforms.Compose([
 # === Adjust: Dataset, Folder path
 # Load training and testing datasets (Real-ESRGAN dataset)
 print("Loading Real-ESRGAN datasets...")
-train_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS_5k/train', transform=transform_HR)
-test_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS_5k/test', transform=transform_HR)
+train_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS_20k/train', transform=transform_HR)
+test_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS_20k/test', transform=transform_HR)
 
 train_loader_Real_ESRGAN = DataLoader(train_dataset_Real_ESRGAN, batch_size=batch_size, shuffle=True)
 test_loader_Real_ESRGAN = DataLoader(test_dataset_Real_ESRGAN, batch_size=batch_size, shuffle=False)
 
 # === Adjust: Model Name
-# Configure the ResNet model for the Real-ESRGAN dataset
-model_Real_ESRGAN = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-model_Real_ESRGAN.fc = nn.Linear(model_Real_ESRGAN.fc.in_features, len(train_dataset_Real_ESRGAN.classes))
+# Configure the VGG19 model for the Real-ESRGAN dataset
+model_Real_ESRGAN = models.vgg19(weights=VGG19_Weights.IMAGENET1K_V1)
+model_Real_ESRGAN.classifier[6] = nn.Linear(model_Real_ESRGAN.classifier[6].in_features, len(train_dataset_Real_ESRGAN.classes))
 model_Real_ESRGAN = model_Real_ESRGAN.to(device)
 
 # Loss function and optimizer
@@ -72,8 +72,12 @@ def train(model, optimizer, train_loader):
         if avg_loss < best_loss:
             best_loss = avg_loss
             print(f"Epoch [{epoch+1}/{num_epochs}] - New best loss: {avg_loss:.4f}. Saving model...")
-            torch.save(model.state_dict(), f"data/model/real_resnet50_5k_best_state_dict.pth")
-            torch.save(model, f"data/model/real_resnet50_5k_best.pth")
+            torch.save(model.state_dict(), f"data/model/real_vgg19_20k_best_state_dict.pth")
+            torch.save(model, f"data/model/real_vgg19_20k_best.pth")
+        
+        # if epoch == 29:
+        #     torch.save(model.state_dict(), f"data/model/srgan_vgg19_30_state_dict.pth")
+        #     torch.save(model, f"data/model/srgan_vgg19_30.pth")
 
 
 # Testing function (includes accuracy, precision, recall, and per-class metrics)
@@ -148,13 +152,13 @@ if __name__ == "__main__":
     train(model_Real_ESRGAN, optimizer_Real_ESRGAN, train_loader_Real_ESRGAN)
     print("Training completed. Starting testing phase...")
 
-    # torch.save(model_Real_ESRGAN.state_dict(), "data/model/default_20k_128_custom_state_dict.pth")
-    # torch.save(model_Real_ESRGAN, "data/model/default_20k_128_custom.pth")
+    # torch.save(model_Real_ESRGAN.state_dict(), "data/model/default_5e5_vgg19_50_2_state_dict.pth")
+    # torch.save(model_Real_ESRGAN, "data/model/default_5e5_vgg19_50_2.pth")
 
-    test_model = torch.load("data/model/real_resnet50_5k_best.pth", weights_only=False).to(device)
+    test_model = torch.load("data/model/real_vgg19_20k_best.pth", weights_only=False).to(device)
     # test_model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
     # test_model.fc = nn.Linear(model_Real_ESRGAN.fc.in_features, len(train_dataset_Real_ESRGAN.classes))
-    test_model.load_state_dict(torch.load("data/model/real_resnet50_5k_best_state_dict.pth"))
+    test_model.load_state_dict(torch.load("data/model/real_vgg19_20k_best_state_dict.pth"))
 
     # Get class names
     class_names_Real_ESRGAN = train_dataset_Real_ESRGAN.classes

@@ -30,51 +30,11 @@ transform_HR = transforms.Compose([
 # === Adjust: Dataset, Folder path
 # Load training and testing datasets (Real-ESRGAN dataset)
 print("Loading Real-ESRGAN datasets...")
-train_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS_5k/train', transform=transform_HR)
-test_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS_5k/test', transform=transform_HR)
+train_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS/train', transform=transform_HR)
+test_dataset_Real_ESRGAN = datasets.ImageFolder('dataset/CLS/test', transform=transform_HR)
 
 train_loader_Real_ESRGAN = DataLoader(train_dataset_Real_ESRGAN, batch_size=batch_size, shuffle=True)
 test_loader_Real_ESRGAN = DataLoader(test_dataset_Real_ESRGAN, batch_size=batch_size, shuffle=False)
-
-# === Adjust: Model Name
-# Configure the ResNet model for the Real-ESRGAN dataset
-model_Real_ESRGAN = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-model_Real_ESRGAN.fc = nn.Linear(model_Real_ESRGAN.fc.in_features, len(train_dataset_Real_ESRGAN.classes))
-model_Real_ESRGAN = model_Real_ESRGAN.to(device)
-
-# Loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer_Real_ESRGAN = optim.Adam(model_Real_ESRGAN.parameters(), lr=learning_rate)
-
-
-# Training function
-def train(model, optimizer, train_loader):
-    best_loss = 0.05
-    model.train()
-    for epoch in range(num_epochs):
-        running_loss = 0.0
-        for i, (images, labels) in enumerate(train_loader):
-            images, labels = images.to(device), labels.to(device)
-
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # Record loss
-            running_loss += loss.item()
-
-        # Print average loss for the epoch
-        avg_loss = running_loss / len(train_loader)
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
-        
-        if avg_loss < best_loss:
-            best_loss = avg_loss
-            print(f"Epoch [{epoch+1}/{num_epochs}] - New best loss: {avg_loss:.4f}. Saving model...")
-            torch.save(model.state_dict(), f"data/model/real_resnet50_5k_best_state_dict.pth")
-            torch.save(model, f"data/model/real_resnet50_5k_best.pth")
-
 
 # Testing function (includes accuracy, precision, recall, and per-class metrics)
 def test(model, test_loader, class_names):
@@ -143,24 +103,17 @@ def test(model, test_loader, class_names):
     return accuracy, precision, recall
 
 if __name__ == "__main__":
-    # Train and test using the Real-ESRGAN dataset
-    print("Starting training phase...")
-    train(model_Real_ESRGAN, optimizer_Real_ESRGAN, train_loader_Real_ESRGAN)
-    print("Training completed. Starting testing phase...")
-
-    # torch.save(model_Real_ESRGAN.state_dict(), "data/model/default_20k_128_custom_state_dict.pth")
-    # torch.save(model_Real_ESRGAN, "data/model/default_20k_128_custom.pth")
-
-    test_model = torch.load("data/model/real_resnet50_5k_best.pth", weights_only=False).to(device)
+    test_model = torch.load("data/model/default_20k_128_best.pth", weights_only=False).to(device)
     # test_model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
     # test_model.fc = nn.Linear(model_Real_ESRGAN.fc.in_features, len(train_dataset_Real_ESRGAN.classes))
-    test_model.load_state_dict(torch.load("data/model/real_resnet50_5k_best_state_dict.pth"))
+    test_model.load_state_dict(torch.load("data/model/default_20k_128_best_state_dict.pth"))
 
     # Get class names
     class_names_Real_ESRGAN = train_dataset_Real_ESRGAN.classes
 
     # === Adjust: Print 
     # Test the model and display results
+    print("Starting testing phase...")
     accuracy_Real_ESRGAN, precision_Real_ESRGAN, recall_Real_ESRGAN = test(test_model, test_loader_Real_ESRGAN, class_names_Real_ESRGAN)
     print(f"\nOverall Accuracy for Real-ESRGAN dataset: {accuracy_Real_ESRGAN * 100:.2f}%")
     print(f"Overall Precision for Real-ESRGAN dataset: {precision_Real_ESRGAN * 100:.2f}%")
